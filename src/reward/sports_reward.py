@@ -1,13 +1,14 @@
-from fuzzywuzzy import fuzz
+from bert_score import BERTScorer
 
 class SportsRankedReward:
+    def __init__(self, lang="en"):
+        model_name = "roberta-large"
+        self.scorer = BERTScorer(model_type=model_name, lang=lang, rescale_with_baseline=True)
+
     def __call__(self, prompt: str, response: str, instance: dict) -> float:
         candidates = instance["candidates"]
         ranking = instance["ranking"]
-        
-        top = candidates[ranking[0]].strip().lower()
-        res = response.strip().lower()
+        reference = candidates[ranking[0]].strip()
 
-        # Fuzzy partial match: returns score between 0 and 100
-        score = fuzz.partial_ratio(res, top)
-        return score / 100.0  # Normalize to [0, 1]
+        P, R, F1 = self.scorer.score([response], [reference])
+        return F1[0].item()
